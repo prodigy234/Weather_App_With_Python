@@ -88,38 +88,77 @@ class WeatherApp(QWidget):
         except requests.exceptions.HTTPError as http_error:
             match response.status_code:
                 case 400:
-                    print("Bad request\nPlease check your input")
+                    self.display_error("Bad request:\nPlease check your input")
                 case 401:
-                    print("Unauthorized\nInvalid API key")
+                    self.display_error("Unauthorized:\nInvalid API key")
                 case 403:
-                    print("Forbidden\nAccess is denied")
+                    self.display_error("Forbidden:\nAccess is denied")
                 case 404:
-                    print("Not found\nCity not found")
+                    self.display_error("Not found:\nCity not found")
                 case 500:
-                    print("Internal Server Error\nPlease try again later")
+                    self.display_error("Internal Server Error:\nPlease try again later")
                 case 502:
-                    print("Bad Gateway\nInvalid response from the server")
+                    self.display_error("Bad Gateway:\nInvalid response from the server")
                 case 503:
-                    print("Service Unavailable\nServer is down")
+                    self.display_error("Service Unavailable:\nServer is down")
                 case 504:
-                    print("Gateway Timeout\nNo response from the server")
+                    self.display_error("Gateway Timeout:\nNo response from the server")
                 case _:
-                    print(f"HTTP error occured\n{http_error}")
+                    self.display_error(f"HTTP error occured:\n{http_error}")
 
-        except requests.exceptions.RequestException:
-            pass
-
+        except  requests.exceptions.ConnectionError:
+            self.display_error("Connection Error:\nCheck your internet connection")
+        except  requests.exceptions.Timeout:
+            self.display_error("Timeout Error:\nThe request timed out")
+        except  requests.exceptions.TooManyRedirects:
+            self.display_error("Too many Redirects:\nCheck the URL")
+        except requests.exceptions.RequestException as req_error:
+            self.display_error(f"Request Error:\n{req_error}")
 
     def display_error(self, message):
-        pass
+        self.temperature_label.setStyleSheet("font-size: 30px;")
+        self.temperature_label.setText(message)
 
     def display_weather(self, data):
-        print(data)
+        self.temperature_label.setStyleSheet("font-size: 75px;")
+        temperature_k = data["main"]["temp"]
+        temperature_c = temperature_k - 273.15
+        temperature_f = (temperature_k * 9/5) - 459.67
+        weather_id = data["weather"][0]["id"]
+        weather_description = data["weather"][0]["description"]
+
+        self.temperature_label.setText(f"{temperature_f:.0f}°F")
+        self.emoji_label.setText(self.get_weather_emoji(weather_id))
+        self.description_label.setText(weather_description)
+
+    @staticmethod
+    def get_weather_emoji(weather_id):
+
+        if 200 <= weather_id <= 232:     # Return thunderstorm
+            return "⛈"
+        elif 300 <= weather_id <= 321:   # Return cloud
+            return "☁️"
+        elif 500 <= weather_id <= 531:   # Return rain
+            return "🌧️"
+        elif 600 <= weather_id <= 622:   # Return snow
+            return "🌨"
+        elif 701 <= weather_id <= 741:   # Return fog
+            return "🌫️"
+        elif weather_id == 762:          # Return volcano
+            return "🌋"
+        elif weather_id == 771:          # Return squall
+            return "🌬" 
+        elif weather_id == 781:          # Return tornado
+            return "🌪️"
+        elif weather_id == 800:          # Return clear sky
+            return "☀️"
+        elif 801 <= weather_id <= 804:   # Return cloud
+            return "🌧️"
+        else:
+            return ""
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     weather_app = WeatherApp()
     weather_app.show()
     sys.exit(app.exec_())
-    
-
